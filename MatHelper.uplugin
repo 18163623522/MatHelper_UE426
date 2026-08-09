@@ -1,0 +1,32 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0-UE426",
+	"FriendlyName": "MatHelper",
+	"Description": "MaterialHelper (UE4.26 port)",
+	"Category": "Other",
+	"CreatedBy": "AKaKLya",
+	"CreatedByURL": "https://github.com/AKaKLya/MatHelper",
+	"DocsURL": "https://github.com/AKaKLya/MatHelper/wiki/MatHelper-Docs",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"EngineVersion": "4.26.0",
+	"CanContainContent": true,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "MatHelper",
+			"Type": "Editor",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "Niagara",
+			"Enabled": true
+		}
+	]
+}
