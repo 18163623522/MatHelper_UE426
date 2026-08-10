@@ -165,7 +165,7 @@ void FMatHelperModule::InitPluginInfo()
 void FMatHelperModule::RegisterTab()
 {
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(ButtonInfoEditorTabName, FOnSpawnTab::CreateRaw(this, &FMatHelperModule::OnSpawnButtonInfoEditor))
-		.SetDisplayName(FText::FromString(UTF8_TO_TCHAR("节点编辑器")))
+		.SetDisplayName(FText::FromString(L"\u8282\u70b9\u7f16\u8f91\u5668"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
 
 	///////////////////////////////////////////////////////////////////
@@ -255,7 +255,7 @@ void FMatHelperModule::InitMatEditorHook()
 
 				//注册场景窗口.
 				TabManager->RegisterTabSpawner(MaterialSceneViewEditorTabName, FOnSpawnTab::CreateRaw(this, &FMatHelperModule::OnSpawnSceneEditorView))
-					.SetDisplayName(FText::FromString(UTF8_TO_TCHAR("场景视图")))
+					.SetDisplayName(FText::FromString(L"\u573a\u666f\u89c6\u56fe"))
 					.SetGroup(TabManager->GetLocalWorkspaceMenuRoot())
 					.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Viewports"));
 			});
@@ -271,7 +271,7 @@ void FMatHelperModule::InitMatEditorHook()
 			Editor->OnRegisterTabSpawners().AddLambda([this](const TSharedRef<class FTabManager>& TabManager)
 			{
 				TabManager->RegisterTabSpawner(MaterialInstanceSceneViewEditorTabName, FOnSpawnTab::CreateRaw(this, &FMatHelperModule::OnSpawnSceneEditorView))
-					.SetDisplayName(FText::FromString(UTF8_TO_TCHAR("场景视图")))
+					.SetDisplayName(FText::FromString(L"\u573a\u666f\u89c6\u56fe"))
 					.SetGroup(TabManager->GetLocalWorkspaceMenuRoot())
 					.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Viewports"));
 			});
@@ -288,8 +288,8 @@ void FMatHelperModule::InitMatEditorHook()
 						MatInstanceEditor->GetTabManager()->TryInvokeTab(MaterialInstanceSceneViewEditorTabName);
 					})),
 					FName(TEXT("SceneView")),
-					FText::FromString(UTF8_TO_TCHAR("场景视图")),
-					FText::FromString(UTF8_TO_TCHAR("场景视图")),
+					FText::FromString(L"\u573a\u666f\u89c6\u56fe"),
+					FText::FromString(L"\u573a\u666f\u89c6\u56fe"),
 					FSlateIcon(FEditorStyle::GetStyleSetName(), "DeveloperTools.MenuIcon"),
 					EUserInterfaceActionType::Button
 					);
@@ -310,8 +310,8 @@ void FMatHelperModule::NiagaraToolBarExtend(FToolBarBuilder& ToolbarBuilder)
 		ToolbarBuilder.AddToolBarButton(
 			FUIAction(FExecuteAction::CreateStatic(&PlayNiagaraOnEditorWorld)),
 			FName(TEXT("Play Niagara")),
-			FText::FromString(UTF8_TO_TCHAR("播放 Niagara")),
-			FText::FromString(UTF8_TO_TCHAR("播放 Niagara")),
+			FText::FromString(L"\u64ad\u653e Niagara"),
+			FText::FromString(L"\u64ad\u653e Niagara"),
 			FSlateIcon(TEXT("SimpleButtonStyle"),"SimpleButton.Niagara"),
 			EUserInterfaceActionType::Button
 		);
@@ -405,7 +405,7 @@ void FMatHelperModule::RegisterButton()
 {
 	UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("MainFrame.MainMenu.Tools");
 	{
-		FToolMenuSection& MenuSection = Menu->AddSection("MatHelper", FText::FromString(UTF8_TO_TCHAR("材质助手")));
+		FToolMenuSection& MenuSection = Menu->AddSection("MatHelper", FText::FromString(L"\u6750\u8d28\u52a9\u624b"));
 		MenuSection.AddDynamicEntry("MatHelper", FNewToolMenuSectionDelegate::CreateLambda([&](FToolMenuSection& InSection)
 		{
 #pragma region MatHelper
@@ -414,8 +414,8 @@ void FMatHelperModule::RegisterButton()
 				FToolMenuSection& Section = InToolMenu->FindOrAddSection("MatHelper");
 				Section.AddEntry(FToolMenuEntry::InitMenuEntry(
 					"MatHelper",
-					FText::FromString(UTF8_TO_TCHAR("材质助手")),
-					FText::FromString(UTF8_TO_TCHAR("打开材质助手管理器")),
+					FText::FromString(L"\u6750\u8d28\u52a9\u624b"),
+					FText::FromString(L"\u6253\u5f00\u6750\u8d28\u52a9\u624b\u7ba1\u7406\u5668"),
 					FSlateIcon(FEditorStyle::GetStyleSetName(), "DeveloperTools.MenuIcon"),
 					FUIAction(FExecuteAction::CreateLambda([]()
 					{
@@ -428,8 +428,8 @@ void FMatHelperModule::RegisterButton()
 
 				Section.AddEntry(FToolMenuEntry::InitMenuEntry(
 					"SwitchCN",
-					FText::FromString(UTF8_TO_TCHAR("切换中英")),
-					FText::FromString(UTF8_TO_TCHAR("在中英文之间切换语言")),
+					FText::FromString(L"\u5207\u6362\u4e2d\u82f1"),
+					FText::FromString(L"\u5728\u4e2d\u82f1\u6587\u4e4b\u95f4\u5207\u6362\u8bed\u8a00"),
 					FSlateIcon(FEditorStyle::GetStyleSetName(), "DeveloperTools.MenuIcon"),
 					FUIAction(FExecuteAction::CreateLambda([]()
 					{
@@ -446,8 +446,8 @@ void FMatHelperModule::RegisterButton()
 
 				Section.AddEntry(FToolMenuEntry::InitMenuEntry(
 					"SceneView",
-					FText::FromString(UTF8_TO_TCHAR("场景视图")),
-					FText::FromString(UTF8_TO_TCHAR("创建一个场景视图")),
+					FText::FromString(L"\u573a\u666f\u89c6\u56fe"),
+					FText::FromString(L"\u521b\u5efa\u4e00\u4e2a\u573a\u666f\u89c6\u56fe"),
 					FSlateIcon(FEditorStyle::GetStyleSetName(), "DeveloperTools.MenuIcon"),
 					FUIAction(FExecuteAction::CreateLambda([&]()
 					{
@@ -457,29 +457,29 @@ void FMatHelperModule::RegisterButton()
 
 				Section.AddEntry(FToolMenuEntry::InitMenuEntry(
 					"Lock",
-					FText::FromString(UTF8_TO_TCHAR("锁定")),
-					FText::FromString(UTF8_TO_TCHAR("锁定选中资产")),
+					FText::FromString(L"\u9501\u5b9a"),
+					FText::FromString(L"\u9501\u5b9a\u9009\u4e2d\u8d44\u4ea7"),
 					FSlateIcon(FEditorStyle::GetStyleSetName(), "DeveloperTools.MenuIcon"),
 					FUIAction(FExecuteAction::CreateRaw(this, &FMatHelperModule::ToggleAssetFlag,true))
 				));
 
 				Section.AddEntry(FToolMenuEntry::InitMenuEntry(
 					"UnLock",
-					FText::FromString(UTF8_TO_TCHAR("解锁")),
-					FText::FromString(UTF8_TO_TCHAR("解锁选中资产")),
+					FText::FromString(L"\u89e3\u9501"),
+					FText::FromString(L"\u89e3\u9501\u9009\u4e2d\u8d44\u4ea7"),
 					FSlateIcon(FEditorStyle::GetStyleSetName(), "DeveloperTools.MenuIcon"),
 					FUIAction(FExecuteAction::CreateRaw(this, &FMatHelperModule::ToggleAssetFlag,false))
 				));
 
 				Section.AddEntry(FToolMenuEntry::InitMenuEntry(
 					"Restart",
-					FText::FromString(UTF8_TO_TCHAR("重启引擎")),
-					FText::FromString(UTF8_TO_TCHAR("重启虚幻引擎")),
+					FText::FromString(L"\u91cd\u542f\u5f15\u64ce"),
+					FText::FromString(L"\u91cd\u542f\u865a\u5e7b\u5f15\u64ce"),
 					FSlateIcon(FEditorStyle::GetStyleSetName(), "DeveloperTools.MenuIcon"),
 					FUIAction(FExecuteAction::CreateLambda([]()
 					{
 						bool bRestart = false;
-						bRestart = EAppReturnType::Yes == FMessageDialog::Open(EAppMsgType::YesNo,FText::FromString(UTF8_TO_TCHAR("重启引擎？")));
+						bRestart = EAppReturnType::Yes == FMessageDialog::Open(EAppMsgType::YesNo,FText::FromString(L"\u91cd\u542f\u5f15\u64ce\uff1f"));
 						if(bRestart)
 						{
 							FUnrealEdMisc::Get().RestartEditor(false);
@@ -498,7 +498,7 @@ void FMatHelperModule::RegisterButton()
 				Section.AddEntry(FToolMenuEntry::InitMenuEntry(
 				*Name,
 				FText::FromString(Name),
-				FText::FromString(UTF8_TO_TCHAR("创建场景视图")),
+				FText::FromString(L"\u521b\u5efa\u573a\u666f\u89c6\u56fe"),
 				FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Viewports"),
 				FUIAction(FExecuteAction::CreateLambda([&]()
 				{
@@ -506,7 +506,7 @@ void FMatHelperModule::RegisterButton()
 				}))));
 			};
 
-			InSection.AddEntry(FToolMenuEntry::InitSubMenu("SceneView",FText::FromString(UTF8_TO_TCHAR("场景视图")),FText::GetEmpty(),FNewToolMenuDelegate::CreateLambda([&](UToolMenu* InToolMenu)
+			InSection.AddEntry(FToolMenuEntry::InitSubMenu("SceneView",FText::FromString(L"\u573a\u666f\u89c6\u56fe"),FText::GetEmpty(),FNewToolMenuDelegate::CreateLambda([&](UToolMenu* InToolMenu)
 			{
 				FToolMenuSection& Section = InToolMenu->FindOrAddSection("SceneView");
 				AddSceneViewEntry(Section,"Scene View 1",SceneViewEditorTabName1);
@@ -536,8 +536,8 @@ void FMatHelperModule::RegisterNiagaraAutoPlayer()
 				FToolMenuEntry& Entry = Section.AddEntry(
 					FToolMenuEntry::InitToolBarButton(
 						FSimpleButtonCommands::Get().PlayNiagaraAction,
-						FText::FromString(UTF8_TO_TCHAR("播放 Niagara")),
-						FText::FromString(UTF8_TO_TCHAR("播放 Niagara")),
+						FText::FromString(L"\u64ad\u653e Niagara"),
+						FText::FromString(L"\u64ad\u653e Niagara"),
 						FSlateIcon(TEXT("SimpleButtonStyle"),"SimpleButton.Niagara")
 					));
 				Entry.SetCommandList(PlayNiagaraCommands);
@@ -554,8 +554,8 @@ void FMatHelperModule::RegisterNiagaraAutoPlayer()
 				FToolMenuEntry& Entry = Section.AddEntry(
 					FToolMenuEntry::InitToolBarButton(
 						FSimpleButtonCommands::Get().PlayNiagaraAction,
-						FText::FromString(UTF8_TO_TCHAR("播放 Niagara")),
-						FText::FromString(UTF8_TO_TCHAR("播放 Niagara")),
+						FText::FromString(L"\u64ad\u653e Niagara"),
+						FText::FromString(L"\u64ad\u653e Niagara"),
 						FSlateIcon(TEXT("SimpleButtonStyle"),"SimpleButton.Niagara")
 					));
 				Entry.SetCommandList(PlayNiagaraCommands);
@@ -572,8 +572,8 @@ void FMatHelperModule::RegisterNiagaraAutoPlayer()
 				FToolMenuEntry& Entry = Section.AddEntry(
 					FToolMenuEntry::InitToolBarButton(
 						FSimpleButtonCommands::Get().PlayNiagaraAction,
-						FText::FromString(UTF8_TO_TCHAR("播放 Niagara")),
-						FText::FromString(UTF8_TO_TCHAR("播放 Niagara")),
+						FText::FromString(L"\u64ad\u653e Niagara"),
+						FText::FromString(L"\u64ad\u653e Niagara"),
 						FSlateIcon(TEXT("SimpleButtonStyle"),"SimpleButton.Niagara")
 					));
 				Entry.SetCommandList(PlayNiagaraCommands);
@@ -622,8 +622,8 @@ void FMatHelperModule::ToggleAssetFlag(bool bIsLock)
 		}
 	}
 
-	FString NotifyStr = FString::Printf(TEXT("%s %d "), bIsLock ? UTF8_TO_TCHAR("锁定") : UTF8_TO_TCHAR("解锁"), ConvertFileNum);
-	NotifyStr += UTF8_TO_TCHAR("个文件");
+	FString NotifyStr = FString::Printf(TEXT("%s %d "), bIsLock ? L"\u9501\u5b9a" : L"\u89e3\u9501", ConvertFileNum);
+	NotifyStr += L"\u4e2a\u6587\u4ef6";
 	EditorNotify(NotifyStr, SNotificationItem::CS_Success);
 }
 
@@ -670,7 +670,7 @@ static TSharedRef<SWidget> MatHelperSpace::GetCommonMapsDropdown()
 		const FText DisplayName = FText::FromString(Path.GetAssetName());
 		MenuBuilder.AddMenuEntry(
 			DisplayName,
-			FText::FromString(UTF8_TO_TCHAR("在编辑器中打开此地图")),
+			FText::FromString(L"\u5728\u7f16\u8f91\u5668\u4e2d\u6253\u5f00\u6b64\u5730\u56fe"),
 			FSlateIcon(),
 			FUIAction(
 				FExecuteAction::CreateStatic(&OpenCommonMap_Clicked, Path.ToString()),
@@ -694,8 +694,8 @@ static void MatHelperSpace::RegisterGameEditorMenus()
 	"CommonMapOptions",
 	FUIAction(FExecuteAction(),FCanExecuteAction::CreateStatic(&HasNoPlayWorld),FIsActionChecked(),FIsActionButtonVisible::CreateStatic(&CanShowCommonMaps)),
 	FOnGetContent::CreateStatic(&GetCommonMapsDropdown),
-	FText::FromString(UTF8_TO_TCHAR("常用地图")),
-	FText::FromString(UTF8_TO_TCHAR("编辑器中常用的地图")),
+	FText::FromString(L"\u5e38\u7528\u5730\u56fe"),
+	FText::FromString(L"\u7f16\u8f91\u5668\u4e2d\u5e38\u7528\u7684\u5730\u56fe"),
 	FSlateIcon(FEditorStyle::GetStyleSetName(), "Icons.Level")
 	);
 	// UE4.26: FToolMenuEntry has no StyleNameOverride member.

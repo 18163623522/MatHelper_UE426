@@ -21,7 +21,7 @@ SHeaderRow::FColumn::FArguments FOuterlineSelectionLockCol::ConstructHeaderRowCo
 	.VAlignHeader(VAlign_Center)
 	.HAlignCell(HAlign_Center)
 	.VAlignCell(VAlign_Center)
-	.DefaultTooltip(FText::FromString(UTF8_TO_TCHAR("Niagara 锁定")))
+	.DefaultTooltip(FText::FromString(L"Niagara \u9501\u5b9a"))
 	[
 		SNew(SImage)
 		.ColorAndOpacity(FSlateColor::UseForeground())

@@ -64,7 +64,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(5.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(UTF8_TO_TCHAR("MatHelper 管理器")))
+		.Text(FText::FromString(L"MatHelper \u7ba1\u7406\u5668"))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 			.OnClicked_Lambda([]()
@@ -82,7 +82,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(5.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(UTF8_TO_TCHAR("场景视图")))
+		.Text(FText::FromString(L"\u573a\u666f\u89c6\u56fe"))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Lambda([&]()
@@ -102,7 +102,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(3.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(UTF8_TO_TCHAR("设置分组")))
+		.Text(FText::FromString(L"\u8bbe\u7f6e\u5206\u7ec4"))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Raw(this,&SMatHelperWidget::SetNodeGroup,false,false)
@@ -112,7 +112,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(3.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(UTF8_TO_TCHAR("自动分组")))
+		.Text(FText::FromString(L"\u81ea\u52a8\u5206\u7ec4"))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Raw(this,&SMatHelperWidget::SetNodeGroup,true,false)
@@ -123,7 +123,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(3.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(UTF8_TO_TCHAR("全部自动分组")))
+		.Text(FText::FromString(L"\u5168\u90e8\u81ea\u52a8\u5206\u7ec4"))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Raw(this,&SMatHelperWidget::SetNodeGroup,true,true)
@@ -160,7 +160,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 		.Padding(3.0f)
 		[
 			SNew(SButton)
-			.Text(FText::FromString(UTF8_TO_TCHAR("添加 Mask 引脚")))
+			.Text(FText::FromString(L"\u6dfb\u52a0 Mask \u5f15\u811a"))
 			.VAlign(VAlign_Center)
 			.HAlign(HAlign_Center)
 			.OnClicked_Raw(this,&SMatHelperWidget::AddNodeMaskPin)
@@ -170,7 +170,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(3.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(UTF8_TO_TCHAR("显示引脚名称")))
+		.Text(FText::FromString(L"\u663e\u793a\u5f15\u811a\u540d\u79f0"))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Lambda([&]()
@@ -207,7 +207,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(3.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(UTF8_TO_TCHAR("创建实例")))
+		.Text(FText::FromString(L"\u521b\u5efa\u5b9e\u4f8b"))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Raw(this,&SMatHelperWidget::CreateInstance)
@@ -217,7 +217,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
     	.Padding(3.0f)
     	[
     		SNew(SButton)
-    		.Text(FText::FromString(UTF8_TO_TCHAR("折射")))
+    		.Text(FText::FromString(L"\u6298\u5c04"))
     		.VAlign(VAlign_Center)
     		.HAlign(HAlign_Center)
     		.OnClicked_Raw(this,&SMatHelperWidget::ToggleRefraction)
@@ -227,7 +227,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(3.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(UTF8_TO_TCHAR("修复函数节点")))
+		.Text(FText::FromString(L"\u4fee\u590d\u51fd\u6570\u8282\u70b9"))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Raw(this,&SMatHelperWidget::FixFunctionNode)
@@ -237,7 +237,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(3.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(UTF8_TO_TCHAR("自动命名")))
+		.Text(FText::FromString(L"\u81ea\u52a8\u547d\u540d"))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Raw(this,&SMatHelperWidget::RemoveParameterType)
@@ -394,7 +394,7 @@ FReply SMatHelperWidget::CreateInstance()
 	// UE4.26: no UEditorAssetSubsystem. Use LoadObject to check existence + DuplicateObject + SavePackage.
 	if (LoadObject<UObject>(nullptr, *NewPath) != nullptr)
 	{
-		MatHelper.EditorNotify(FString(UTF8_TO_TCHAR("创建失败 - 此实例已存在")),SNotificationItem::CS_Fail);
+		MatHelper.EditorNotify(FString(L"\u521b\u5efa\u5931\u8d25 - \u6b64\u5b9e\u4f8b\u5df2\u5b58\u5728"),SNotificationItem::CS_Fail);
 		return FReply::Handled();
 	}
 

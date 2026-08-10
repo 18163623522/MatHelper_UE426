@@ -24,21 +24,21 @@ void SButtonInfoEditor::Construct(const FArguments& InArgs, TArray<FNodeButton> 
 	SAssignNew(SaveButton, SButton)
 	.VAlign(VAlign_Center)
 	.HAlign(HAlign_Center)
-	.Text(FText::FromString(UTF8_TO_TCHAR("保存到")))
+	.Text(FText::FromString(L"\u4fdd\u5b58\u5230"))
 	.IsEnabled(false)
 	.OnClicked(this, &SButtonInfoEditor::OnConfirmClicked);
 
 	SAssignNew(PasteSaveButton, SButton)
 	.VAlign(VAlign_Center)
 	.HAlign(HAlign_Center)
-	.Text(FText::FromString(UTF8_TO_TCHAR("粘贴并保存到")))
+	.Text(FText::FromString(L"\u7c98\u8d34\u5e76\u4fdd\u5b58\u5230"))
 	.IsEnabled(false)
 	.OnClicked(this, &SButtonInfoEditor::PasteSave);
 
 	CurrentEditText->SetEnabled(false);
-	CurrentEditText->SetText(FText::FromString(UTF8_TO_TCHAR("正在编辑：无")));
+	CurrentEditText->SetText(FText::FromString(L"\u6b63\u5728\u7f16\u8f91\uff1a\u65e0"));
 
-	EditText->SetText(FText::FromString(UTF8_TO_TCHAR("请选择一个按钮信息。")));
+	EditText->SetText(FText::FromString(L"\u8bf7\u9009\u62e9\u4e00\u4e2a\u6309\u94ae\u4fe1\u606f\u3002"));
 	NodeConfigPath = IPluginManager::Get().FindPlugin("MatHelper")->GetBaseDir() + "/Config/AddNodeFile/";
 	ChildSlot
 	[
@@ -76,7 +76,7 @@ void SButtonInfoEditor::Construct(const FArguments& InArgs, TArray<FNodeButton> 
 				SNew(SButton)
 				.VAlign(VAlign_Center)
 				.HAlign(HAlign_Center)
-				.Text(FText::FromString(UTF8_TO_TCHAR("刷新助手按钮")))
+				.Text(FText::FromString(L"\u5237\u65b0\u52a9\u624b\u6309\u94ae"))
 				.OnClicked_Lambda([]()
 				{
 					FMatHelperModule::RefreshAllWidgetButton();
@@ -104,7 +104,7 @@ void SButtonInfoEditor::Construct(const FArguments& InArgs, TArray<FNodeButton> 
 
 FReply SButtonInfoEditor::OnButtonClicked(FString InTextName)
 {
-	CurrentEditText->SetText(FText::FromString(FString(UTF8_TO_TCHAR("正在编辑：")) + InTextName));
+	CurrentEditText->SetText(FText::FromString(FString(L"\u6b63\u5728\u7f16\u8f91\uff1a") + InTextName));
 	SaveButton->SetEnabled(true);
 	PasteSaveButton->SetEnabled(true);
 	CurrentEditFileName = NodeConfigPath + InTextName + ".txt";
