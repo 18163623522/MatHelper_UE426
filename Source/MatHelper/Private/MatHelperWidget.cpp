@@ -1,4 +1,6 @@
-﻿// Copyright AKaKLya 2024
+﻿
+#pragma execution_character_set("utf-8")
+// Copyright AKaKLya 2024
 
 #include "MatHelperWidget.h"
 #include "EditorWidgetsModule.h"
