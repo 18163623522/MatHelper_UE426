@@ -64,7 +64,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(5.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(TEXT("MatHelper 管理器")))
+		.Text(FText::FromString(UTF8_TO_TCHAR("MatHelper 管理器")))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 			.OnClicked_Lambda([]()
@@ -82,7 +82,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(5.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(TEXT("场景视图")))
+		.Text(FText::FromString(UTF8_TO_TCHAR("场景视图")))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Lambda([&]()
@@ -102,7 +102,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(3.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(TEXT("设置分组")))
+		.Text(FText::FromString(UTF8_TO_TCHAR("设置分组")))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Raw(this,&SMatHelperWidget::SetNodeGroup,false,false)
@@ -112,7 +112,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(3.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(TEXT("自动分组")))
+		.Text(FText::FromString(UTF8_TO_TCHAR("自动分组")))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Raw(this,&SMatHelperWidget::SetNodeGroup,true,false)
@@ -123,7 +123,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(3.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(TEXT("全部自动分组")))
+		.Text(FText::FromString(UTF8_TO_TCHAR("全部自动分组")))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Raw(this,&SMatHelperWidget::SetNodeGroup,true,true)
@@ -160,7 +160,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 		.Padding(3.0f)
 		[
 			SNew(SButton)
-			.Text(FText::FromString(TEXT("添加 Mask 引脚")))
+			.Text(FText::FromString(UTF8_TO_TCHAR("添加 Mask 引脚")))
 			.VAlign(VAlign_Center)
 			.HAlign(HAlign_Center)
 			.OnClicked_Raw(this,&SMatHelperWidget::AddNodeMaskPin)
@@ -170,7 +170,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(3.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(TEXT("显示引脚名称")))
+		.Text(FText::FromString(UTF8_TO_TCHAR("显示引脚名称")))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Lambda([&]()
@@ -207,7 +207,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(3.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(TEXT("创建实例")))
+		.Text(FText::FromString(UTF8_TO_TCHAR("创建实例")))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Raw(this,&SMatHelperWidget::CreateInstance)
@@ -217,7 +217,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
     	.Padding(3.0f)
     	[
     		SNew(SButton)
-    		.Text(FText::FromString(TEXT("折射")))
+    		.Text(FText::FromString(UTF8_TO_TCHAR("折射")))
     		.VAlign(VAlign_Center)
     		.HAlign(HAlign_Center)
     		.OnClicked_Raw(this,&SMatHelperWidget::ToggleRefraction)
@@ -227,7 +227,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(3.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(TEXT("修复函数节点")))
+		.Text(FText::FromString(UTF8_TO_TCHAR("修复函数节点")))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Raw(this,&SMatHelperWidget::FixFunctionNode)
@@ -237,7 +237,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 	.Padding(3.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(TEXT("自动命名")))
+		.Text(FText::FromString(UTF8_TO_TCHAR("自动命名")))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Raw(this,&SMatHelperWidget::RemoveParameterType)
@@ -394,7 +394,7 @@ FReply SMatHelperWidget::CreateInstance()
 	// UE4.26: no UEditorAssetSubsystem. Use LoadObject to check existence + DuplicateObject + SavePackage.
 	if (LoadObject<UObject>(nullptr, *NewPath) != nullptr)
 	{
-		MatHelper.EditorNotify(TEXT("创建失败 - 此实例已存在"),SNotificationItem::CS_Fail);
+		MatHelper.EditorNotify(FString(UTF8_TO_TCHAR("创建失败 - 此实例已存在")),SNotificationItem::CS_Fail);
 		return FReply::Handled();
 	}
 

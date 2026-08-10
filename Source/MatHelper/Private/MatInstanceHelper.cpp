@@ -19,7 +19,7 @@ void SMatInstanceHelper::Construct(const FArguments& InArgs,TSharedPtr<UMaterial
 	.Padding(5.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(TEXT("开启所有参数")))
+		.Text(FText::FromString(UTF8_TO_TCHAR("开启所有参数")))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Raw(this,&SMatInstanceHelper::ToogleParams,true)
@@ -29,7 +29,7 @@ void SMatInstanceHelper::Construct(const FArguments& InArgs,TSharedPtr<UMaterial
 	.Padding(5.0f)
 	[
 		SNew(SButton)
-		.Text(FText::FromString(TEXT("关闭所有参数")))
+		.Text(FText::FromString(UTF8_TO_TCHAR("关闭所有参数")))
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
 		.OnClicked_Raw(this,&SMatInstanceHelper::ToogleParams,false)
