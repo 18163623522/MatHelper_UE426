@@ -1,4 +1,4 @@
-// Copyright AKaKLya 2024
+﻿// Copyright AKaKLya 2024
 // UE4.26 port: FAssetTypeActions instead of UAssetDefinition; FEditorStyle instead of FAppStyle.
 
 #include "MatHelper.h"

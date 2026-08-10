@@ -1,4 +1,4 @@
-// Copyright AKaKLya 2024
+﻿// Copyright AKaKLya 2024
 // UE4.26 port: SceneOutliner::FActorTreeItem in namespace; ITreeItem has no CastTo.
 
 #include "OuterlineSelectionCol.h"

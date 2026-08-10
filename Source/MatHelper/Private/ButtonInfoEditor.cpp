@@ -1,4 +1,4 @@
-// Copyright AKaKLya 2024
+﻿// Copyright AKaKLya 2024
 
 
 #include "ButtonInfoEditor.h"
