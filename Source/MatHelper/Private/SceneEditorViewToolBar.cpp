@@ -27,7 +27,7 @@ void SceneEditorViewToolBar::ExtendLeftAlignedToolbarSlots(TSharedPtr<SHorizonta
 	.AutoWidth()
 	[
 		SNew(SButton)
-		.Text(FText::FromString("FX"))
+		.Text(FText::FromString(TEXT("特效")))
 		.ButtonColorAndOpacity(FSlateColor(FLinearColor(1,1,1,0.45)))
 		.OnClicked_Lambda([]()
 		{
@@ -53,7 +53,7 @@ TSharedRef<SWidget> SceneEditorViewToolBar::GenerateShowMenu() const
 		
 		ShowMenuBuilder.BeginSection("ShowTool");
 		{
-			ShowMenuBuilder.AddMenuEntry(FText::FromString("Reset View"),FText::GetEmpty(),
+			ShowMenuBuilder.AddMenuEntry(FText::FromString(TEXT("重置视图")),FText::GetEmpty(),
 				FSlateIcon(),FUIAction(FExecuteAction::CreateLambda([&]()
 				{
 					SceneView->UpdateViewPortLocation();
