@@ -139,6 +139,14 @@ void FMatHelperModule::InitPluginInfo()
 	PluginPath = IPluginManager::Get().FindPlugin("MatHelper")->GetBaseDir();
 	MatHelperMgn = LoadObject<UMatHelperMgn>(nullptr,TEXT("/MatHelper/MatHelper.MatHelper"));
 
+	// UE4.26: Content uasset may be UE5 format and fail to load.
+	// Create a transient default instance so the plugin still functions.
+	if (!MatHelperMgn)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MatHelper: Failed to load /MatHelper/MatHelper.MatHelper — creating transient default. Please rebuild the DataAsset in 4.26."));
+		MatHelperMgn = NewObject<UMatHelperMgn>(GetTransientPackage(), NAME_None, RF_Transient);
+	}
+
 	FSimpleButtonStyle::Initialize();
 	FSimpleButtonStyle::ReloadTextures();
 	FSimpleButtonCommands::Register();

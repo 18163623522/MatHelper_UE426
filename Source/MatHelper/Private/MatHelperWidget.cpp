@@ -398,6 +398,28 @@ FReply SMatHelperWidget::CreateInstance()
 
 	// Load the empty MI template and duplicate it.
 	UMaterialInstance* EmptyMI = LoadObject<UMaterialInstance>(nullptr, *MIEmptyPath);
+	if (!EmptyMI)
+	{
+		// UE4.26: MI_Empty.uasset may be UE5 format. Create a new MIC directly.
+		UE_LOG(LogTemp, Warning, TEXT("MatHelper: Failed to load MI_Empty template — creating new MIC directly."));
+		UPackage* NewPackage = CreatePackage(nullptr, *TargetPath);
+		UMaterialInstanceConstant* NewMIC = NewObject<UMaterialInstanceConstant>(NewPackage, *NewName, RF_Public | RF_Standalone);
+		NewMIC->Parent = Material;
+		NewMIC->PreEditChange(nullptr);
+		NewMIC->PostEditChange();
+		NewPackage->SetDirtyFlag(true);
+		UPackage::SavePackage(NewPackage, NewMIC, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *NewPath);
+
+		TArray<UObject*> AssetList;
+		AssetList.Add(NewMIC);
+		FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
+		ContentBrowserModule.Get().SyncBrowserToAssets(AssetList);
+		if (GEditor)
+		{
+			GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(NewMIC);
+		}
+		return FReply::Handled();
+	}
 	UPackage* NewPackage = CreatePackage(nullptr, *TargetPath);
 	UMaterialInstance* NewMi = DuplicateObject(EmptyMI, NewPackage, *NewName);
 	NewMi->Parent = Material;
