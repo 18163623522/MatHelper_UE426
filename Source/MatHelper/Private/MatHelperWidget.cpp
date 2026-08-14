@@ -15,8 +15,12 @@
 #define private public
 #define protected public
 #include "Editor/MaterialEditor/Private/MaterialEditor.h"
+#include "Editor/MaterialEditor/Private/SMaterialPalette.h"
 #undef private
 #undef protected
+
+#include "TickableEditorObject.h"
+#include "Stats/Stats.h"
 
 #include "Kismet/KismetMathLibrary.h"
 #include "MaterialEditor/MaterialEditorInstanceConstant.h"
@@ -700,6 +704,55 @@ inline bool SMatHelperWidget::CheckNode(UObject* Node)
 	// UE4.26: UMaterialGraphNode_Composite / PinBase do not exist (UE5-only).
 	if (Cast<UMaterialGraphNode_Knot>(Node)) { CheckSuccess = false; }
 	return CheckSuccess;
+}
+
+
+// UE4.26: OnMaterialEditorOpened broadcasts BEFORE InitMaterialEditor creates the Palette
+// (Palette is assigned at MaterialEditor.cpp:1036, but RegisterTabSpawners fires earlier at
+// InitAssetEditor). Subscribing to OnRegisterTabSpawners and injecting there fails because
+// Palette is still null. This tickable injector waits until Palette exists, then injects.
+class FMatHelperPaletteInjector : public FTickableEditorObject
+{
+public:
+	FMatHelperPaletteInjector(const TWeakPtr<FMaterialEditor>& InMatEditor)
+		: WeakMatEditor(InMatEditor)
+	{
+	}
+
+	virtual void Tick(float DeltaTime) override
+	{
+		TSharedPtr<FMaterialEditor> MatEditor = WeakMatEditor.Pin();
+		FMatHelperModule& Module = FMatHelperModule::Get();
+
+		// Editor closed before Palette was created — give up.
+		if (!MatEditor.IsValid())
+		{
+			Module.RemovePaletteInjector(this);
+			return;
+		}
+
+		// Palette is created late in InitMaterialEditor — wait for it.
+		if (MatEditor->Palette.IsValid())
+		{
+			Module.InjectPaletteWidget(MatEditor.Get());
+			Module.RemovePaletteInjector(this);
+		}
+	}
+
+	virtual TStatId GetStatId() const override
+	{
+		RETURN_QUICK_DECLARE_CYCLE_STAT(FMatHelperPaletteInjector, STATGROUP_Tickables);
+	}
+
+private:
+	TWeakPtr<FMaterialEditor> WeakMatEditor;
+};
+
+TSharedPtr<FMatHelperPaletteInjector> MakeMatHelperPaletteInjector(const TWeakPtr<IMaterialEditor>& InMatEditor)
+{
+	// Up-cast the IMaterialEditor weak pointer to FMaterialEditor.
+	TSharedPtr<FMaterialEditor> MatEditor = StaticCastSharedPtr<FMaterialEditor>(InMatEditor.Pin());
+	return MakeShareable(new FMatHelperPaletteInjector(MatEditor));
 }
 
 #undef LOCTEXT_NAMESPACE

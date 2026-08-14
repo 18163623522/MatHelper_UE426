@@ -117,6 +117,9 @@ void FMatHelperModule::ShutdownModule()
 		MatInterface.OnMaterialInstanceEditorOpened().Remove(MaterialOpenHandle);
 	}
 
+	// UE4.26: clear any pending palette injectors.
+	PendingInjectors.Empty();
+
 	// UE4.26: unregister our asset type actions.
 	if (FModuleManager::Get().IsModuleLoaded("AssetTools"))
 	{
@@ -217,48 +220,13 @@ void FMatHelperModule::InitMatEditorHook()
 
 	MaterialOpenHandle = MatInterface.OnMaterialEditorOpened().AddLambda([&](const TWeakPtr<IMaterialEditor>& InMatEditor)
 		{
+			// UE4.26: the delegate fires BEFORE InitMaterialEditor runs — the Palette widget
+			// does not exist yet at this point. Defer injection via a tickable injector that
+			// waits for Palette creation (see FMatHelperPaletteInjector in MatHelperWidget.cpp).
 			IMaterialEditor* IMatEditor = InMatEditor.Pin().Get();
 			FMaterialEditor* MatEditor = static_cast<FMaterialEditor*>(IMatEditor);
-			// UE4.26: direct access via #define hack (Palette is private, ChildSlot is protected).
-			TSharedPtr<SMaterialPalette>& Palette = MatEditor->Palette;
-
-			IMatEditor->OnRegisterTabSpawners().AddLambda([&](const TSharedRef<class FTabManager>& TabManager)
-			{
-				// 在原有控件的基础上 添加自定义的控件.
-				auto MhWidget = SNew(SMatHelperWidget, MatEditor);
-				MhWidgets.RemoveAll([](auto& WeakWidget){ return !WeakWidget.IsValid(); });
-				MhWidgets.Add(MhWidget);
-
-				// UE4.26: SCompoundWidget::ChildSlot is protected. Use GetChildren() to read
-				// original content, then use a derived-class helper to access ChildSlot for writing.
-				TSharedRef<SMaterialPalette> PaletteRef = Palette.ToSharedRef();
-				FChildren* Children = PaletteRef->GetChildren();
-				TSharedRef<SWidget> OriginalContent = Children->GetChildAt(0);
-
-				// Access ChildSlot via file-scope FCompoundWidgetAccessor (reinterpret through SCompoundWidget*).
-				// UE4.26: TSharedRef::Get() returns ObjectType& (reference), need & to get pointer.
-				SCompoundWidget* AsCompoundWidget = static_cast<SCompoundWidget*>(&PaletteRef.Get());
-				FCompoundWidgetAccessor* Accessor = reinterpret_cast<FCompoundWidgetAccessor*>(AsCompoundWidget);				Accessor->ChildSlot
-				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.FillHeight(MatHelperMgn->HeightRatio)
-					.Padding(2.0f)
-					[
-						MhWidget
-					]
-					+ SVerticalBox::Slot()
-					[
-						OriginalContent //原有的控件
-					]
-				];
-
-				//注册场景窗口.
-				TabManager->RegisterTabSpawner(MaterialSceneViewEditorTabName, FOnSpawnTab::CreateRaw(this, &FMatHelperModule::OnSpawnSceneEditorView))
-					.SetDisplayName(FText::FromString(L"\u573a\u666f\u89c6\u56fe"))
-					.SetGroup(TabManager->GetLocalWorkspaceMenuRoot())
-					.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Viewports"));
-			});
+			TSharedPtr<FMatHelperPaletteInjector> Injector = MakeMatHelperPaletteInjector(InMatEditor);
+			PendingInjectors.Add(Injector);
 		});
 
 	MaterialInstanceOpenHandle = MatInterface.OnMaterialInstanceEditorOpened().AddLambda([&](TWeakPtr<IMaterialEditor> InMatInstanceEditor)
@@ -301,6 +269,59 @@ void FMatHelperModule::InitMatEditorHook()
 		}
 	});
 
+}
+
+void FMatHelperModule::InjectPaletteWidget(FMaterialEditor* MatEditor)
+{
+	if (!MatEditor || !MatEditor->Palette.IsValid())
+	{
+		return;
+	}
+
+	// 在原有控件的基础上 添加自定义的控件.
+	auto MhWidget = SNew(SMatHelperWidget, MatEditor);
+	MhWidgets.RemoveAll([](auto& WeakWidget){ return !WeakWidget.IsValid(); });
+	MhWidgets.Add(MhWidget);
+
+	// SCompoundWidget::ChildSlot is protected — read original content via GetChildren(),
+	// then write through the layout-compatible FCompoundWidgetAccessor derived class.
+	TSharedRef<SMaterialPalette> PaletteRef = MatEditor->Palette.ToSharedRef();
+	FChildren* Children = PaletteRef->GetChildren();
+	TSharedRef<SWidget> OriginalContent = Children->GetChildAt(0);
+
+	FCompoundWidgetAccessor* Accessor = reinterpret_cast<FCompoundWidgetAccessor*>(static_cast<SCompoundWidget*>(&PaletteRef.Get()));
+	Accessor->ChildSlot
+	[
+		SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.FillHeight(MatHelperMgn->HeightRatio)
+		.Padding(2.0f)
+		[
+			MhWidget
+		]
+		+ SVerticalBox::Slot()
+		[
+			OriginalContent //原有的控件
+		]
+	];
+
+	//注册场景窗口（材质编辑器内）.
+	TSharedPtr<FTabManager> TabManager = MatEditor->GetTabManager();
+	if (TabManager.IsValid())
+	{
+		TabManager->RegisterTabSpawner(MaterialSceneViewEditorTabName, FOnSpawnTab::CreateRaw(this, &FMatHelperModule::OnSpawnSceneEditorView))
+			.SetDisplayName(FText::FromString(L"\u573a\u666f\u89c6\u56fe"))
+			.SetGroup(TabManager->GetLocalWorkspaceMenuRoot())
+			.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Viewports"));
+	}
+}
+
+void FMatHelperModule::RemovePaletteInjector(FMatHelperPaletteInjector* Injector)
+{
+	PendingInjectors.RemoveAll([Injector](const TSharedPtr<FMatHelperPaletteInjector>& Item)
+	{
+		return Item.Get() == Injector;
+	});
 }
 
 void FMatHelperModule::NiagaraToolBarExtend(FToolBarBuilder& ToolbarBuilder)
