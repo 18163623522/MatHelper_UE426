@@ -33,12 +33,36 @@
 | Niagara 播放 | 主工具栏 / 材质 / 材质实例 / Niagara 编辑器按钮，播放带 Tag 的特效 |
 | 中英语言切换 / 重启引擎 | 工具 → 材质助手 |
 
-### ❌ 不可用（引擎版本限制）
+### ❌ 完全缺失（4.26 引擎硬限制，无法恢复）
 
-| 功能 | 原因 |
+| 功能 | 原版行为 | 缺失原因 |
+|---|---|---|
+| Niagara Sequencer 自动轨道 | Niagara Actor 拖入定序器时，自动创建 "System Life Cycle" 轨道并设为 DesiredAge 模式 | 4.26 的 `ILevelSequenceModule` 只有 `RegisterObjectSpawner`，没有 `OnNewActorTrackAdded` 委托，无可挂接入口。`AddDefaultSystemTracks` 整段移除，DataAsset 里的 `OverrideNiagaraSequenceMode` 配置项保留但无效 |
+
+### ⚠️ 功能降级（行为改变，非完全丢失）
+
+| 功能 | 原版行为 | 4.26 现状 |
+|---|---|---|
+| 折射按钮 | 在 `RM_None`（关闭）与 `RM_IndexOfRefraction` 之间切换 | 4.26 枚举没有 `RM_None`，改为在 `RM_IndexOfRefraction` / `RM_PixelNormalOffset` 两种模式间切换，无法"关闭"折射 |
+| SVG 按钮图标 | Niagara 播放等按钮用 SVG 矢量图标 | 4.26 无 `FSlateVectorImageBrush`，按钮纯色显示；`ModifyICON` 中基于 SVG 的分支退化为空 brush（基于材质的分支保留） |
+| CheckNode 节点过滤 | 排除 Composite / PinBase 等节点类型 | 4.26 引擎本身没有 `UMaterialGraphNode_Composite` / `PinBase` 类，相应检查移除（无实际影响） |
+
+### 📦 配置数据缺失（重建 DataAsset 即可恢复）
+
+原版 DataAsset（UE5 格式，4.26 加载不了）中的**自定义节点按钮列表、自动分组关键词（`AutoGroupKeys`）**等数据未随插件迁移。当前内置兜底仅有：
+
+- 节点按钮：Fresnel、ParticleColor 两个（对应 `Config/AddNodeFile/` 现成模板）
+- 自动分组关键词：空（「自动分组」无关键词可用时相当于不分组；「设置分组」手动输入不受影响）
+
+在 4.26 编辑器重建 `UMatHelperMgn` DataAsset 补齐这些数组即可完整恢复。
+
+### ℹ️ 疑似缺失、核实后不算
+
+| 项目 | 核实结论 |
 |---|---|
-| Niagara Sequencer 自动轨道 | 4.26 的 `ILevelSequenceModule` 没有 `OnNewActorTrackAdded` 委托，无法在 Niagara 拖入定序器时自动建轨 |
-| SVG 按钮图标 | 4.26 无 `FSlateVectorImageBrush`，按钮为纯色显示，功能不受影响 |
+| 材质实例 Detail Customization（1700+ 行 × 3 个版本文件） | 原版从未注册的**死代码**，不生效，移植版删除无影响 |
+| Material Layers 图层树（`SMaterialLayersFunctionsInstanceTree`） | 原版中主体处于注释块内，非启用功能 |
+| V6.1 参数批量开关 | 原版 `SMatInstanceHelper` 无实例化点（原版实际也触发不了）；移植版已挂到材质实例编辑器工具栏，**比原版更完整** |
 
 ---
 
