@@ -1,4 +1,4 @@
-﻿// Copyright AKaKLya 2024
+// Copyright AKaKLya 2024
 // UE4.26 port: no C++17 inline static; use function-local static instead.
 
 #pragma once

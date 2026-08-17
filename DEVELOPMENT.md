@@ -591,15 +591,27 @@ UE_LOG(LogMatHelper, Warning, TEXT("MatHelper: %s"), *SomeString);
 
 | 限制 | 原因 | 影响 |
 |---|---|---|
-| Content/ uasset 无法直接使用 | UE5 序列化格式 | 需在 4.26 重建 DataAsset |
+| Content/ uasset 无法直接使用 | UE5 序列化格式 | 插件已内置兜底（临时默认配置对象、新建 MIC）；建议在 4.26 重建 DataAsset 以自定义配置 |
 | SVG 图标不显示 | 4.26 无 `FSlateVectorImageBrush` | 按钮用纯色 brush，不影响功能 |
 | Niagara 自动轨道不可用 | 4.26 无 `OnNewActorTrackAdded` | Niagara 拖入 Sequencer 不会自动添加轨道 |
 | `OverrideNiagaraSequenceMode` 配置无效 | 同上 | 配置项保留但不生效 |
 | 折射切换无 `RM_None` | 4.26 枚举只有两个值 | 在 `RM_IndexOfRefraction`/`RM_PixelNormalOffset` 间切换 |
+| 不可用 Live Coding 迭代 | Slate ChildSlot 注入 + 私有成员访问，热重载内存布局不一致 | 出现乱码（如「翡器鷄胎膀掞」）或崩溃；必须关编辑器后重编 |
+
+### 运行时修复记录（实机验证后追加）
+
+| 问题 | 根因 | 修复 |
+|---|---|---|
+| 启动即崩溃（EXCEPTION_ACCESS_VIOLATION） | UE5 格式 DataAsset 加载失败，`MatHelperMgn` 为 null | 加载失败时创建 transient 默认对象 + 全路径空指针防护 |
+| 助手面板不显示 | `OnMaterialEditorOpened` 广播早于 Palette 创建（MaterialEditor.cpp:1036 才赋值），原注入时机必失败 | 新增 `FMatHelperPaletteInjector`（`FTickableEditorObject`）每帧等待 Palette 就绪后注入 |
+| 界面中文乱码 | Unity Build 合并 cpp 无 BOM，MSVC 按 GBK 解析，编译期字面量即损坏（BOM/pragma/`UTF8_TO_TCHAR` 均无效） | 全部中文改 `L"\uXXXX"` Unicode 转义 |
+| 热重载后乱码 | Live Coding 补丁 DLL 与旧 Slate 控件内存错位 | 清理 hot-reload 残留、规范迭代流程（禁用 Live Coding） |
+| 节点按钮缺失 | transient 默认对象 `NodeButtonInfo` 为空 | 内置 Fresnel/ParticleColor 默认按钮 |
+| V6.1 参数开关无入口 | `SMatInstanceHelper` 在原版即无实例化点（死代码） | 提取 `ToggleAllParams` 静态函数挂到材质实例编辑器工具栏 |
 
 ### 待办
 
-- [ ] 在 4.26 编辑器内运行测试，验证所有功能
+- [x] 在 4.26 编辑器内运行测试，验证核心功能（面板注入/中文/节点按钮/参数开关）
 - [ ] 重建 Content/ 资源（MatHelper.uasset / MI_Empty.uasset / M_SlateIcon.uasset）
 - [ ] 添加自定义日志类别 `LogMatHelper`
 - [ ] 考虑用 PNG 替代 SVG 图标（4.26 支持 `FSlateImageBrush` 加载 PNG）
