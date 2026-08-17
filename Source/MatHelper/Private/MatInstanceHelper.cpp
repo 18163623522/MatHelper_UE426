@@ -38,8 +38,19 @@ void SMatInstanceHelper::Construct(const FArguments& InArgs,TSharedPtr<UMaterial
 
 FReply SMatInstanceHelper::ToogleParams(bool bIsOpen)
 {
+	SMatInstanceHelper::ToggleAllParams(MatInstanceConstant.Get(), bIsOpen);
+	return FReply::Handled();
+}
+
+void SMatInstanceHelper::ToggleAllParams(UMaterialInstanceConstant* InMatInstanceConstant, bool bIsOpen)
+{
+	if (!InMatInstanceConstant)
+	{
+		return;
+	}
+
 	const auto MaterialEditorInstance = NewObject<UMaterialEditorInstanceConstant>(GetTransientPackage(), NAME_None, RF_Transactional);
-	MaterialEditorInstance->SetSourceInstance(MatInstanceConstant.Get());
+	MaterialEditorInstance->SetSourceInstance(InMatInstanceConstant);
 	for (int32 GroupIdx = 0; GroupIdx < MaterialEditorInstance->ParameterGroups.Num(); ++GroupIdx)
 	{
 		FEditorParameterGroup& ParameterGroup = MaterialEditorInstance->ParameterGroups[GroupIdx];
@@ -49,5 +60,4 @@ FReply SMatInstanceHelper::ToogleParams(bool bIsOpen)
 			FMaterialPropertyHelpers::OnOverrideParameter(bIsOpen,Parameter,MaterialEditorInstance);
 		}
 	}
-	return FReply::Handled();
 }

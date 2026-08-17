@@ -26,6 +26,8 @@
 #undef protected
 
 #include "MatHelperSettings.h"
+#include "MatInstanceHelper.h"
+#include "Materials/MaterialInstanceConstant.h"
 #include "MovieScene.h"
 #include "NiagaraActor.h"
 #include "NiagaraComponent.h"
@@ -258,6 +260,32 @@ void FMatHelperModule::InitMatEditorHook()
 					FName(TEXT("SceneView")),
 					FText::FromString(L"\u573a\u666f\u89c6\u56fe"),
 					FText::FromString(L"\u573a\u666f\u89c6\u56fe"),
+					FSlateIcon(FEditorStyle::GetStyleSetName(), "DeveloperTools.MenuIcon"),
+					EUserInterfaceActionType::Button
+					);
+
+					// V6.1: batch enable/disable all MIC parameters.
+					UMaterialInstanceConstant* MIC = Cast<UMaterialInstanceConstant>(MatInstanceEditor->GetMaterialInterface());
+					ToolbarBuilder.AddToolBarButton(
+					FUIAction(FExecuteAction::CreateLambda([MIC]()
+					{
+						SMatInstanceHelper::ToggleAllParams(MIC, true);
+					})),
+					FName(TEXT("EnableAllParams")),
+					FText::FromString(L"\u5f00\u542f\u6240\u6709\u53c2\u6570"),
+					FText::FromString(L"\u5f00\u542f\u6240\u6709\u53c2\u6570"),
+					FSlateIcon(FEditorStyle::GetStyleSetName(), "DeveloperTools.MenuIcon"),
+					EUserInterfaceActionType::Button
+					);
+
+					ToolbarBuilder.AddToolBarButton(
+					FUIAction(FExecuteAction::CreateLambda([MIC]()
+					{
+						SMatInstanceHelper::ToggleAllParams(MIC, false);
+					})),
+					FName(TEXT("DisableAllParams")),
+					FText::FromString(L"\u5173\u95ed\u6240\u6709\u53c2\u6570"),
+					FText::FromString(L"\u5173\u95ed\u6240\u6709\u53c2\u6570"),
 					FSlateIcon(FEditorStyle::GetStyleSetName(), "DeveloperTools.MenuIcon"),
 					EUserInterfaceActionType::Button
 					);

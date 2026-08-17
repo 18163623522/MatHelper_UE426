@@ -51,6 +51,10 @@ struct FNodeButton
 	//节点按钮创建节点时，将会使用这个Root偏移值.
 	UPROPERTY(EditAnywhere,Category = "Material",meta = (EditCondition = RootOffsetOverride))
 	FVector2D RootOffset = FVector2D(-200,160);
+
+	FNodeButton(){}
+	FNodeButton(const FString& InButtonName)
+		:ButtonName(InButtonName){}
 };
 
 UCLASS()
@@ -132,8 +136,15 @@ public:
 	TArray<FString> AutoGroupKeys;
 
 	// 节点按钮信息
+	// UE4.26: built-in defaults so the panel works without rebuilding the DataAsset
+	// (the shipped uasset is UE5 format and cannot load in 4.26). ButtonName must
+	// match a Config/AddNodeFile/<ButtonName>.txt template.
 	UPROPERTY(EditAnywhere,Category = "Material")
-	TArray<FNodeButton> NodeButtonInfo ;
+	TArray<FNodeButton> NodeButtonInfo =
+		{
+			FNodeButton(TEXT("Fresnel")),
+			FNodeButton(TEXT("ParticleColor"))
+		};
 	
 public:
 	
