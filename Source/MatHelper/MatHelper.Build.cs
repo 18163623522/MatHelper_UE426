@@ -63,6 +63,7 @@ public class MatHelper : ModuleRules
 				"LevelEditor",
 				"AssetRegistry",
 				"Kismet",
+				"WorkspaceMenuStructure",
 			}
 		);
 

@@ -1,4 +1,4 @@
-// Copyright AKaKLya 2024
+﻿// Copyright AKaKLya 2024
 
 #pragma once
 
@@ -92,33 +92,33 @@ public:
 
 public:
 	// 创建SceneView时，选择视角的方式.
-	UPROPERTY(EditAnywhere,Category = "General")
+	UPROPERTY(EditAnywhere,Category = "General", meta = (DisplayName = "场景视图视角"))
 	ESceneViewMethod SceneViewMethod = ESceneViewMethod::Auto;
 
 public:
 	//材质资产的显示颜色，引擎默认是绿色(64,192,64)
-	UPROPERTY(EditAnywhere,Category = "Material")
+	UPROPERTY(EditAnywhere,Category = "Material", meta = (DisplayName = "材质资产颜色"))
 	FColor MaterialAssetColor = FColor(255,25,25);
 
 	//材质实例资产的显示颜色，引擎默认是绿色(0,128,0)
-	UPROPERTY(EditAnywhere,Category = "Material")
+	UPROPERTY(EditAnywhere,Category = "Material", meta = (DisplayName = "材质实例资产颜色"))
 	FColor MaterialInstanceAssetColor = FColor(0,128,0);
 
 	// 决定了插件助手面板的占比，1是占一半，2是全占. 0.5是一半的一半
 	// 更改后需要重新启动 材质编辑器 才会生效
-	UPROPERTY(EditAnywhere,Category = "Material")
+	UPROPERTY(EditAnywhere,Category = "Material", meta = (DisplayName = "面板高度占比"))
 	float HeightRatio = 1.0;
 
 	// 节点按钮创建节点的位置---相对于Root根节点的位置偏移
 	// 但可以勾选 RootOffsetOverride 覆盖这个值.
-	UPROPERTY(EditAnywhere,Category = "Material")
+	UPROPERTY(EditAnywhere,Category = "Material", meta = (DisplayName = "根节点偏移"))
 	FVector2D RootOffset = FVector2D(-100,800);
 
 	// 节点按钮创建节点的位置---相对于普通节点的位置偏移
-	UPROPERTY(EditAnywhere,Category = "Material")
+	UPROPERTY(EditAnywhere,Category = "Material", meta = (DisplayName = "基础节点偏移"))
 	FVector2D BaseOffset = FVector2D(50,50);
 
-	UPROPERTY(EditAnywhere,Category = "Material")
+	UPROPERTY(EditAnywhere,Category = "Material", meta = (DisplayName = "Mask 引脚列表"))
 	TArray<FNodeMaskPin> MaskPinInfo =
 		{
 			DECLARE_NODE_MASK_PIN(R, 1, 0, 0, 0),
@@ -132,14 +132,31 @@ public:
 		};
 	
 	// 自动分组关键词
-	UPROPERTY(EditAnywhere,Category = "Material")
-	TArray<FString> AutoGroupKeys;
+	// UE4.26: starter keywords so 自动分组 works before the user edits the DataAsset.
+	UPROPERTY(EditAnywhere,Category = "Material", meta = (DisplayName = "自动分组关键词"))
+	TArray<FString> AutoGroupKeys =
+		{
+			TEXT("BaseColor"),
+			TEXT("Color"),
+			TEXT("Normal"),
+			TEXT("Roughness"),
+			TEXT("Metallic"),
+			TEXT("Specular"),
+			TEXT("Emissive"),
+			TEXT("Opacity"),
+			TEXT("AO"),
+			TEXT("Mask"),
+			TEXT("_R"),
+			TEXT("_G"),
+			TEXT("_B"),
+			TEXT("_A")
+		};
 
 	// 节点按钮信息
 	// UE4.26: built-in defaults so the panel works without rebuilding the DataAsset
 	// (the shipped uasset is UE5 format and cannot load in 4.26). ButtonName must
 	// match a Config/AddNodeFile/<ButtonName>.txt template.
-	UPROPERTY(EditAnywhere,Category = "Material")
+	UPROPERTY(EditAnywhere,Category = "Material", meta = (DisplayName = "节点按钮信息"))
 	TArray<FNodeButton> NodeButtonInfo =
 		{
 			FNodeButton(TEXT("Fresnel")),
@@ -150,10 +167,10 @@ public:
 	
 	// 将Niagara拖入定序器时，自动打开轨道并设置为 DesiredAge 模式.
 	// 设置更改后需要重启引擎.
-	UPROPERTY(EditAnywhere,Category = "Niagara")
+	UPROPERTY(EditAnywhere,Category = "Niagara", meta = (DisplayName = "覆盖 Niagara 定序器模式"))
 	bool OverrideNiagaraSequenceMode = true;
 
-	UPROPERTY(EditAnywhere,Category = "Niagara")
+	UPROPERTY(EditAnywhere,Category = "Niagara", meta = (DisplayName = "创建 Niagara 自动播放选中"))
 	bool CreateNiagaraAutoPlaySelection = true;
 
 private:

@@ -19,9 +19,6 @@
 #undef private
 #undef protected
 
-#include "TickableEditorObject.h"
-#include "Stats/Stats.h"
-
 #include "Kismet/KismetMathLibrary.h"
 #include "MaterialEditor/MaterialEditorInstanceConstant.h"
 #include "MaterialGraph/MaterialGraphNode.h"
@@ -92,6 +89,21 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 		.OnClicked_Lambda([&]()
 		{
 			MatEditorInterface->GetTabManager()->TryInvokeTab(FMatHelperModule::MaterialSceneViewEditorTabName);
+			return FReply::Handled();
+		})
+	];
+
+	NodeButtonScrollBox->AddSlot()
+	.Padding(5.0f)
+	[
+		SNew(SButton)
+		.Text(FText::FromString(L"\u8d34\u56fe\u6d4f\u89c8\u5668"))
+		.ToolTipText(FText::FromString(L"\u6253\u5f00\u6750\u8d28\u8d34\u56fe\u6d4f\u89c8\u5668\uff08\u53ef\u62d6\u62fd\u8d34\u56fe\u5230\u6750\u8d28\u56fe\uff09"))
+		.VAlign(VAlign_Center)
+		.HAlign(HAlign_Center)
+		.OnClicked_Lambda([&]()
+		{
+			MatEditorInterface->GetTabManager()->TryInvokeTab(FMatHelperModule::TextureBrowserTabName);
 			return FReply::Handled();
 		})
 	];
@@ -183,6 +195,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 			TArray<UObject*> SelectedNodes = MatEditorInterface->GetSelectedNodes().Array();
 			if(SelectedNodes.Num() == 0)
 			{
+				FMatHelperModule::Get().EditorNotify(FString(L"\u8bf7\u5148\u9009\u4e2d\u8282\u70b9"),SNotificationItem::CS_Fail);
 				return FReply::Handled();
 			}
 			
@@ -253,6 +266,7 @@ void SMatHelperWidget::Construct(const FArguments& InArgs,FMaterialEditor* InMat
 FReply SMatHelperWidget::SetNodeGroup(bool AutoGroup,bool AllGroup) const
 {
 	bool ShouldRefresh = false;
+	int32 GroupedCount = 0;
 
 	if(AllGroup == true)
 	{
@@ -264,9 +278,21 @@ FReply SMatHelperWidget::SetNodeGroup(bool AutoGroup,bool AllGroup) const
 	}
 	const FMatHelperModule& MatHelper = FMatHelperModule::Get();
 	TArray<FString> Names = MatHelper.MatHelperMgn->AutoGroupKeys;
-	
+
 	auto SelectedNodes = MatEditorInterface->GetSelectedNodes();
 	MatEditorInterface->FocusWindow();
+
+	// UE4.26: no-op paths used to return silently, which read as "button is broken".
+	if (SelectedNodes.Num() == 0)
+	{
+		FMatHelperModule::Get().EditorNotify(FString(L"\u8bf7\u5148\u9009\u4e2d\u8282\u70b9"),SNotificationItem::CS_Fail);
+		return FReply::Handled();
+	}
+	if (AutoGroup && Names.Num() == 0)
+	{
+		FMatHelperModule::Get().EditorNotify(FString(L"\u81ea\u52a8\u5206\u7ec4\u5173\u952e\u8bcd\u4e3a\u7a7a\uff0c\u8bf7\u5728\u6750\u8d28\u52a9\u624b\u7ba1\u7406\u5668\u4e2d\u914d\u7f6e AutoGroupKeys"),SNotificationItem::CS_Fail);
+		return FReply::Handled();
+	}
 	
 	FString GroupName = GroupText->GetText().ToString(); // 提前获取组名
 
@@ -279,6 +305,7 @@ FReply SMatHelperWidget::SetNodeGroup(bool AutoGroup,bool AllGroup) const
 				if (Parameter->ParameterName.ToString().Contains(Name))
 				{
 					Parameter->Group = *Name;
+					GroupedCount++;
 					break; // 找到第一个匹配项后退出
 				}
 			}
@@ -286,10 +313,11 @@ FReply SMatHelperWidget::SetNodeGroup(bool AutoGroup,bool AllGroup) const
 		else
 		{
 			Parameter->Group = *GroupName;
+			GroupedCount++;
 		}
 		ShouldRefresh = true;
 	};
-	
+
 	for(UObject* Node : SelectedNodes)
 	{
 		if(UMaterialGraphNode* MatNode = Cast<UMaterialGraphNode>(Node))
@@ -306,7 +334,12 @@ FReply SMatHelperWidget::SetNodeGroup(bool AutoGroup,bool AllGroup) const
 			}
 		}
 	}
-	
+
+	if (GroupedCount == 0)
+	{
+		FMatHelperModule::Get().EditorNotify(FString(L"\u672a\u627e\u5230\u53ef\u5206\u7ec4\u7684\u6750\u8d28\u53c2\u6570\u8282\u70b9"),SNotificationItem::CS_Fail);
+	}
+
 	if(ShouldRefresh)
 	{
 		MatEditorInterface->UpdateMaterialAfterGraphChange();
@@ -320,6 +353,7 @@ FReply SMatHelperWidget::AddNodeMaskPin()
 	TArray<UObject*> SelectedNodes = MatEditorInterface->GetSelectedNodes().Array();
 	if(SelectedNodes.Num() == 0)
 	{
+		FMatHelperModule::Get().EditorNotify(FString(L"\u8bf7\u5148\u9009\u4e2d\u8282\u70b9"),SNotificationItem::CS_Fail);
 		return FReply::Handled();
 	}
 	
@@ -487,21 +521,32 @@ FReply SMatHelperWidget::FixFunctionNode() const
 {
 	bool bNeedRefreshNode = false;
 	auto Nodes = MatEditorInterface->GetSelectedNodes().Array();
+	if(Nodes.Num() == 0)
+	{
+		FMatHelperModule::Get().EditorNotify(FString(L"\u8bf7\u5148\u9009\u4e2d\u8282\u70b9"),SNotificationItem::CS_Fail);
+		return FReply::Handled();
+	}
+	int32 FixedCount = 0;
 	for(const auto Node : Nodes)
 	{
 		UMaterialGraphNode* MatNode = Cast<UMaterialGraphNode>(Node);
-		if(Cast<UMaterialExpressionMaterialFunctionCall>(MatNode->MaterialExpression))
+		if(MatNode && Cast<UMaterialExpressionMaterialFunctionCall>(MatNode->MaterialExpression))
 		{
 			MatNode->RecreateAndLinkNode();
 			bNeedRefreshNode = true;
+			FixedCount++;
 		}
+	}
+	if(FixedCount == 0)
+	{
+		FMatHelperModule::Get().EditorNotify(FString(L"\u672a\u9009\u4e2d\u51fd\u6570\u8282\u70b9\uff08\u8bf7\u9009\u4e2d\u6750\u8d28\u51fd\u6570\u8c03\u7528\u8282\u70b9\uff09"),SNotificationItem::CS_Fail);
 	}
 	if(bNeedRefreshNode)
 	{
 		MatEditorInterface->UpdateMaterialAfterGraphChange();
 	}
 	return FReply::Handled();
-		
+
 }
 
 FReply SMatHelperWidget::InitialButton()
@@ -540,6 +585,13 @@ FReply SMatHelperWidget::InitialButton()
 FReply SMatHelperWidget::CreateMatNode(int32 Index) const
 {
 	FMatHelperModule& MatHelper = FMatHelperModule::Get();
+	// The button list may have been rebuilt behind our back (DataAsset fallback
+	// paths) — never index NodeButtonInfo unchecked.
+	if (!MatHelper.MatHelperMgn->NodeButtonInfo.IsValidIndex(Index))
+	{
+		MatHelper.EditorNotify(FString(L"\u8282\u70b9\u6309\u94ae\u914d\u7f6e\u5df2\u53d8\u52a8\uff0c\u8bf7\u70b9\u51fb\u5237\u65b0\u52a9\u624b\u6309\u94ae\u540e\u91cd\u8bd5"),SNotificationItem::CS_Fail);
+		return FReply::Handled();
+	}
 	const FString NodeFileName = PluginConfigPath + "AddNodeFile/" + MatHelper.MatHelperMgn->NodeButtonInfo[Index].ButtonName + ".txt";
 	
 	if(FPaths::FileExists(NodeFileName) == false)
@@ -598,21 +650,32 @@ FReply SMatHelperWidget::CreateMatNode(int32 Index) const
 	}
 	
 	auto NewNodes = MatEditorInterface->GetSelectedNodes().Array();
-	
+
 	for(const auto Node : NewNodes)
 	{
 		UMaterialGraphNode* MatNode = Cast<UMaterialGraphNode>(Node);
-		if(Cast<UMaterialExpressionMaterialFunctionCall>(MatNode->MaterialExpression))
+		if (MatNode && MatNode->MaterialExpression)
 		{
-			MatNode->RecreateAndLinkNode();
+			if(Cast<UMaterialExpressionMaterialFunctionCall>(MatNode->MaterialExpression))
+			{
+				MatNode->RecreateAndLinkNode();
+			}
+			MatEditorInterface->AddToSelection(MatNode->MaterialExpression);
 		}
-		MatEditorInterface->AddToSelection(MatNode->MaterialExpression);
 	}
 
-	const TSharedPtr<SGraphEditor> GraphEdPtr = MatEditorInterface->GraphEditor;
-	if (GraphEdPtr.IsValid())
+	// UE4.26: PasteNodesHere does not always leave the pasted nodes selected —
+	// never index the post-paste selection unchecked.
+	if (NewNodes.Num() > 0)
 	{
-		GraphEdPtr.Get()->JumpToNode(Cast<UMaterialGraphNode>(NewNodes[0]),false);
+		const TSharedPtr<SGraphEditor> GraphEdPtr = MatEditorInterface->GraphEditor;
+		if (GraphEdPtr.IsValid())
+		{
+			if (UMaterialGraphNode* JumpTarget = Cast<UMaterialGraphNode>(NewNodes[0]))
+			{
+				GraphEdPtr.Get()->JumpToNode(JumpTarget,false);
+			}
+		}
 	}
 	
 	
@@ -653,7 +716,8 @@ FReply SMatHelperWidget::RemoveParameterType() const
 	
 	auto SelectedNodes = MatEditorInterface->GetSelectedNodes().Array();
 	if (SelectedNodes.Num() == 0) {
-	    return FReply::Handled();
+		FMatHelperModule::Get().EditorNotify(FString(L"\u8bf7\u5148\u9009\u4e2d\u8282\u70b9"),SNotificationItem::CS_Fail);
+		return FReply::Handled();
 	}
 	
 	for (const auto Node : SelectedNodes)
@@ -710,49 +774,9 @@ inline bool SMatHelperWidget::CheckNode(UObject* Node)
 // UE4.26: OnMaterialEditorOpened broadcasts BEFORE InitMaterialEditor creates the Palette
 // (Palette is assigned at MaterialEditor.cpp:1036, but RegisterTabSpawners fires earlier at
 // InitAssetEditor). Subscribing to OnRegisterTabSpawners and injecting there fails because
-// Palette is still null. This tickable injector waits until Palette exists, then injects.
-class FMatHelperPaletteInjector : public FTickableEditorObject
-{
-public:
-	FMatHelperPaletteInjector(const TWeakPtr<FMaterialEditor>& InMatEditor)
-		: WeakMatEditor(InMatEditor)
-	{
-	}
-
-	virtual void Tick(float DeltaTime) override
-	{
-		TSharedPtr<FMaterialEditor> MatEditor = WeakMatEditor.Pin();
-		FMatHelperModule& Module = FMatHelperModule::Get();
-
-		// Editor closed before Palette was created — give up.
-		if (!MatEditor.IsValid())
-		{
-			Module.RemovePaletteInjector(this);
-			return;
-		}
-
-		// Palette is created late in InitMaterialEditor — wait for it.
-		if (MatEditor->Palette.IsValid())
-		{
-			Module.InjectPaletteWidget(MatEditor.Get());
-			Module.RemovePaletteInjector(this);
-		}
-	}
-
-	virtual TStatId GetStatId() const override
-	{
-		RETURN_QUICK_DECLARE_CYCLE_STAT(FMatHelperPaletteInjector, STATGROUP_Tickables);
-	}
-
-private:
-	TWeakPtr<FMaterialEditor> WeakMatEditor;
-};
-
-TSharedPtr<FMatHelperPaletteInjector> MakeMatHelperPaletteInjector(const TWeakPtr<IMaterialEditor>& InMatEditor)
-{
-	// Up-cast the IMaterialEditor weak pointer to FMaterialEditor.
-	TSharedPtr<FMaterialEditor> MatEditor = StaticCastSharedPtr<FMaterialEditor>(InMatEditor.Pin());
-	return MakeShareable(new FMatHelperPaletteInjector(MatEditor));
-}
+// Palette is still null. The injection is deferred via an FTSTicker poll registered in
+// FMatHelperModule::StartupModule (see MatHelper.cpp) — do NOT reintroduce an
+// FTickableEditorObject that removes itself inside Tick(): destroying a tickable during
+// its own Tick trips the "possible memory stomp" ensure in TickableEditorObject.h.
 
 #undef LOCTEXT_NAMESPACE

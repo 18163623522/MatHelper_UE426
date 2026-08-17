@@ -28,6 +28,16 @@
 #include "MatHelperSettings.h"
 #include "MatInstanceHelper.h"
 #include "Materials/MaterialInstanceConstant.h"
+#include "Containers/Ticker.h"
+#include "HAL/FileManager.h"
+#include "HAL/PlatformFileManager.h"
+#include "ContentBrowserModule.h"
+#include "IContentBrowserSingleton.h"
+#include "TextureBrowser.h"
+#include "WorkspaceMenuStructureModule.h"
+#include "WorkspaceMenuStructure.h"
+#include "Engine/Texture2D.h"
+#include "Engine/TextureCube.h"
 #include "MovieScene.h"
 #include "NiagaraActor.h"
 #include "NiagaraComponent.h"
@@ -68,6 +78,7 @@ public:
 const FName FMatHelperModule::ButtonInfoEditorTabName = "ButtonInfoEditor";
 const FName FMatHelperModule::SceneViewEditorTabName = "SceneEditorView";
 const FName FMatHelperModule::MaterialSceneViewEditorTabName = "MaterialSceneEditorView";
+const FName FMatHelperModule::TextureBrowserTabName = "MatHelperTextureBrowser";
 
 namespace MatHelperSpace
 {
@@ -82,6 +93,21 @@ namespace MatHelperSpace
 	const FName SceneViewEditorTabName7 = "SceneEditorView7";
 	const FName SceneViewEditorTabName8 = "SceneEditorView8";
 	const FName SceneViewEditorTabName9 = "SceneEditorView9";
+
+	// UE4.26 addition: extra plugin-scoped content browser instances (registered
+	// into the native Content Browser workspace group; native count is 4, so these
+	// extend the set to 15 total).
+	const FName ContentBrowserTabName1 = "MatHelperContentBrowser1";
+	const FName ContentBrowserTabName2 = "MatHelperContentBrowser2";
+	const FName ContentBrowserTabName3 = "MatHelperContentBrowser3";
+	const FName ContentBrowserTabName4 = "MatHelperContentBrowser4";
+	const FName ContentBrowserTabName5 = "MatHelperContentBrowser5";
+	const FName ContentBrowserTabName6 = "MatHelperContentBrowser6";
+	const FName ContentBrowserTabName7 = "MatHelperContentBrowser7";
+	const FName ContentBrowserTabName8 = "MatHelperContentBrowser8";
+	const FName ContentBrowserTabName9 = "MatHelperContentBrowser9";
+	const FName ContentBrowserTabName10 = "MatHelperContentBrowser10";
+	const FName ContentBrowserTabName11 = "MatHelperContentBrowser11";
 	const FName MaterialInstanceSceneViewEditorTabName = "MaterialInstanceSceneEditorView";
 	const FName NiagaraSceneViewEditorTabName = "NiagaraSceneViewEditorTabName";
 	TSharedRef<ISceneOutlinerColumn> OnCreateOutlinerColumn(ISceneOutliner& SceneOutliner);
@@ -119,9 +145,6 @@ void FMatHelperModule::ShutdownModule()
 		MatInterface.OnMaterialInstanceEditorOpened().Remove(MaterialOpenHandle);
 	}
 
-	// UE4.26: clear any pending palette injectors.
-	PendingInjectors.Empty();
-
 	// UE4.26: unregister our asset type actions.
 	if (FModuleManager::Get().IsModuleLoaded("AssetTools"))
 	{
@@ -147,11 +170,24 @@ void FMatHelperModule::InitPluginInfo()
 	MatHelperMgn = LoadObject<UMatHelperMgn>(nullptr,TEXT("/MatHelper/MatHelper.MatHelper"));
 
 	// UE4.26: Content uasset may be UE5 format and fail to load.
-	// Create a transient default instance so the plugin still functions.
+	// Rebuild the config object in memory now, and persist it to disk later:
+	// saving during StartupModule races the asset registry's plugin-content scan,
+	// and SavePackage fatals the editor when the old file cannot be replaced.
 	if (!MatHelperMgn)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MatHelper: Failed to load /MatHelper/MatHelper.MatHelper — creating transient default. Please rebuild the DataAsset in 4.26."));
-		MatHelperMgn = NewObject<UMatHelperMgn>(GetTransientPackage(), NAME_None, RF_Transient);
+		UE_LOG(LogTemp, Warning, TEXT("MatHelper: Failed to load /MatHelper/MatHelper.MatHelper — rebuilding the DataAsset (deferred save to disk)."));
+		UPackage* ConfigPackage = CreatePackage(nullptr, TEXT("/MatHelper/MatHelper"));
+		MatHelperMgn = NewObject<UMatHelperMgn>(ConfigPackage, TEXT("MatHelper"), RF_Public | RF_Standalone);
+		// The failed UE5-format load can leave this package with half-initialized
+		// leftovers that NewObject may pick up (empty arrays, defaults missing) —
+		// force the class defaults back in so the panel has working data.
+		RestoreConfigDefaults(MatHelperMgn);
+		FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([](float)
+		{
+			// Keep ticking (return true) while the old file is still locked by the
+			// asset registry scan; stop once saved or permanently failed.
+			return FMatHelperModule::Get().DeferredSaveConfigAsset();
+		}), 10.0f);
 	}
 
 	FSimpleButtonStyle::Initialize();
@@ -164,6 +200,59 @@ void FMatHelperModule::InitPluginInfo()
 		FExecuteAction::CreateStatic(&PlayNiagaraOnEditorWorld),
 		FCanExecuteAction());
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FMatHelperModule::RegisterButton));
+}
+
+void FMatHelperModule::RestoreConfigDefaults(UMatHelperMgn* Mgn)
+{
+	const UMatHelperMgn* CDO = GetDefault<UMatHelperMgn>();
+	Mgn->SceneViewMethod = CDO->SceneViewMethod;
+	Mgn->MaterialAssetColor = CDO->MaterialAssetColor;
+	Mgn->MaterialInstanceAssetColor = CDO->MaterialInstanceAssetColor;
+	Mgn->HeightRatio = CDO->HeightRatio;
+	Mgn->RootOffset = CDO->RootOffset;
+	Mgn->BaseOffset = CDO->BaseOffset;
+	Mgn->MaskPinInfo = CDO->MaskPinInfo;
+	Mgn->AutoGroupKeys = CDO->AutoGroupKeys;
+	Mgn->NodeButtonInfo = CDO->NodeButtonInfo;
+	Mgn->IConName = CDO->IConName;
+	Mgn->OverrideNiagaraSequenceMode = CDO->OverrideNiagaraSequenceMode;
+	Mgn->CreateNiagaraAutoPlaySelection = CDO->CreateNiagaraAutoPlaySelection;
+}
+
+bool FMatHelperModule::DeferredSaveConfigAsset()
+{
+	if (!MatHelperMgn)
+	{
+		return false;
+	}
+	const FString SaveFile = PluginPath / TEXT("Content/MatHelper.uasset");
+
+	// Move the old (UE5-format) file aside instead of deleting it: the asset
+	// registry scanner opens package files WITHOUT FILE_SHARE_DELETE, so Delete
+	// fails while a rename succeeds.
+	if (IFileManager::Get().FileExists(*SaveFile))
+	{
+		FString BackupFile = SaveFile + TEXT(".ue5bak");
+		int32 BackupIndex = 0;
+		while (IFileManager::Get().FileExists(*BackupFile))
+		{
+			BackupFile = SaveFile + FString::Printf(TEXT(".ue5bak%d"), ++BackupIndex);
+		}
+		if (!IFileManager::Get().Move(*BackupFile, *SaveFile, /*bReplace*/ true))
+		{
+			UE_LOG(LogTemp, Verbose, TEXT("MatHelper: old MatHelper.uasset is still locked — retrying in 10s."));
+			return true;
+		}
+	}
+
+	UPackage* ConfigPackage = MatHelperMgn->GetOutermost();
+	if (UPackage::SavePackage(ConfigPackage, MatHelperMgn, RF_Public | RF_Standalone, *SaveFile))
+	{
+		UE_LOG(LogTemp, Log, TEXT("MatHelper: rebuilt 4.26 DataAsset at %s"), *SaveFile);
+		return false;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("MatHelper: deferred save of the rebuilt DataAsset failed — will retry on the next editor launch."));
+	return false;
 }
 
 
@@ -198,6 +287,38 @@ void FMatHelperModule::RegisterTab()
 	RegisterSceneView(SceneViewEditorTabName8,"SceneView 8");
 	RegisterSceneView(SceneViewEditorTabName9,"SceneView 9");
 	///////////////////////////////////////////////////////////////////
+
+	///////////////////////////////////////////////////////////////////
+	// UE4.26: register 11 extra browsers INTO the native "Content Browser" workspace
+	// group (Window menu), so they sit alongside the engine's built-in four.
+	const IWorkspaceMenuStructure& MenuStructure = WorkspaceMenu::GetMenuStructure();
+	TSharedRef<FWorkspaceItem> ContentBrowserGroup = MenuStructure.GetToolsCategory()->AddGroup(
+		FText::FromString(L"Content Browser"),
+		FText::FromString(L"Open a Content Browser tab."),
+		FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.TabIcon"),
+		true);
+	const FName ContentBrowserTabs[11] =
+	{
+		ContentBrowserTabName1, ContentBrowserTabName2, ContentBrowserTabName3,
+		ContentBrowserTabName4, ContentBrowserTabName5, ContentBrowserTabName6,
+		ContentBrowserTabName7, ContentBrowserTabName8, ContentBrowserTabName9,
+		ContentBrowserTabName10, ContentBrowserTabName11
+	};
+	for (int32 CBIndex = 0; CBIndex < 11; ++CBIndex)
+	{
+		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(ContentBrowserTabs[CBIndex], FOnSpawnTab::CreateRaw(this, &FMatHelperModule::OnSpawnContentBrowser))
+			.SetDisplayName(FText::FromString(FString::Printf(L"\u5185\u5bb9\u6d4f\u89c8\u5668 %d", CBIndex + 5)))
+			.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.TabIcon"))
+			.SetGroup(ContentBrowserGroup)
+			.SetMenuType(ETabSpawnerMenuType::Enabled);
+	}
+
+	// UE4.26 addition: material-focused texture browser (drag textures into the graph).
+	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(TextureBrowserTabName, FOnSpawnTab::CreateRaw(this, &FMatHelperModule::OnSpawnTextureBrowser))
+		.SetDisplayName(FText::FromString(L"\u8d34\u56fe\u6d4f\u89c8\u5668"))
+		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.ContentBrowser"))
+		.SetMenuType(ETabSpawnerMenuType::Enabled);
+	///////////////////////////////////////////////////////////////////
 }
 
 
@@ -223,12 +344,27 @@ void FMatHelperModule::InitMatEditorHook()
 	MaterialOpenHandle = MatInterface.OnMaterialEditorOpened().AddLambda([&](const TWeakPtr<IMaterialEditor>& InMatEditor)
 		{
 			// UE4.26: the delegate fires BEFORE InitMaterialEditor runs — the Palette widget
-			// does not exist yet at this point. Defer injection via a tickable injector that
-			// waits for Palette creation (see FMatHelperPaletteInjector in MatHelperWidget.cpp).
-			IMaterialEditor* IMatEditor = InMatEditor.Pin().Get();
-			FMaterialEditor* MatEditor = static_cast<FMaterialEditor*>(IMatEditor);
-			TSharedPtr<FMatHelperPaletteInjector> Injector = MakeMatHelperPaletteInjector(InMatEditor);
-			PendingInjectors.Add(Injector);
+			// does not exist yet at this point. Poll with a core ticker until it exists;
+			// returning false removes the ticker safely.
+			TWeakPtr<FMaterialEditor> WeakMatEditor = StaticCastSharedPtr<FMaterialEditor>(InMatEditor.Pin());
+			FTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([WeakMatEditor](float)
+			{
+				TSharedPtr<FMaterialEditor> MatEditor = WeakMatEditor.Pin();
+
+				// Editor closed before Palette was created — give up.
+				if (!MatEditor.IsValid())
+				{
+					return false;
+				}
+
+				// Palette is created late in InitMaterialEditor — wait for it.
+				if (MatEditor->Palette.IsValid())
+				{
+					FMatHelperModule::Get().InjectPaletteWidget(MatEditor.Get());
+					return false;
+				}
+				return true;
+			}));
 		});
 
 	MaterialInstanceOpenHandle = MatInterface.OnMaterialInstanceEditorOpened().AddLambda([&](TWeakPtr<IMaterialEditor> InMatInstanceEditor)
@@ -341,15 +477,13 @@ void FMatHelperModule::InjectPaletteWidget(FMaterialEditor* MatEditor)
 			.SetDisplayName(FText::FromString(L"\u573a\u666f\u89c6\u56fe"))
 			.SetGroup(TabManager->GetLocalWorkspaceMenuRoot())
 			.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Viewports"));
-	}
-}
 
-void FMatHelperModule::RemovePaletteInjector(FMatHelperPaletteInjector* Injector)
-{
-	PendingInjectors.RemoveAll([Injector](const TSharedPtr<FMatHelperPaletteInjector>& Item)
-	{
-		return Item.Get() == Injector;
-	});
+		// UE4.26 addition: texture browser dockable inside the material editor.
+		TabManager->RegisterTabSpawner(TextureBrowserTabName, FOnSpawnTab::CreateRaw(this, &FMatHelperModule::OnSpawnTextureBrowser))
+			.SetDisplayName(FText::FromString(L"\u8d34\u56fe\u6d4f\u89c8\u5668"))
+			.SetGroup(TabManager->GetLocalWorkspaceMenuRoot())
+			.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.ContentBrowser"));
+	}
 }
 
 void FMatHelperModule::NiagaraToolBarExtend(FToolBarBuilder& ToolbarBuilder)
@@ -395,6 +529,7 @@ void FMatHelperModule::PlayNiagaraOnEditorWorld()
 	TArray<AActor*> NiagaraActors;
 	UWorld* World = GEditor->GetEditorWorldContext().World();
 	UGameplayStatics::GetAllActorsOfClass(World,ANiagaraActor::StaticClass(),NiagaraActors);
+	int32 PlayedCount = 0;
 	for(AActor* NiagaraActor : NiagaraActors)
 	{
 		auto Niagara = Cast<ANiagaraActor>(NiagaraActor);
@@ -403,7 +538,12 @@ void FMatHelperModule::PlayNiagaraOnEditorWorld()
 			UNiagaraComponent* NiagaraComponent = Niagara->GetNiagaraComponent();
 			NiagaraComponent->Activate(true);
 			NiagaraComponent->ReregisterComponent();
+			PlayedCount++;
 		}
+	}
+	if (PlayedCount == 0)
+	{
+		Get().EditorNotify(FString(L"\u672a\u627e\u5230\u5e26 NiagaraAutoPlay \u6807\u7b7e\u7684 Actor\uff08\u8bf7\u5148\u5728\u5927\u7eb2\u89c6\u56fe\u4e2d\u52fe\u9009\uff09"),SNotificationItem::CS_Fail);
 	}
 }
 
@@ -447,6 +587,30 @@ TSharedRef<SDockTab> FMatHelperModule::OnSpawnSceneEditorView(const FSpawnTabArg
 				SNew(SceneEditorView)
 		];
 
+}
+
+TSharedRef<SDockTab> FMatHelperModule::OnSpawnContentBrowser(const FSpawnTabArgs& SpawnTabArgs)
+{
+	TSharedRef<SDockTab> NewTab = SNew(SDockTab)
+		.TabRole(ETabRole::NomadTab);
+
+	// Each tab gets its own browser instance; the tab id keeps them independent.
+	// (4.26: FContentBrowserModule::Get is a const member — fetch the module instance.)
+	const FString InstanceName = FString(TEXT("MatHelperContentBrowser_")) + SpawnTabArgs.GetTabId().ToString();
+	NewTab->SetContent(
+		FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser").Get().CreateContentBrowser(FName(*InstanceName), NewTab, nullptr)
+	);
+	return NewTab;
+}
+
+TSharedRef<SDockTab> FMatHelperModule::OnSpawnTextureBrowser(const FSpawnTabArgs& SpawnTabArgs)
+{
+	return SNew(SDockTab)
+		.TabRole(ETabRole::NomadTab)
+		.Label(FText::FromString(L"\u8d34\u56fe\u6d4f\u89c8\u5668"))
+		[
+			SNew(SMatHelperTextureBrowser)
+		];
 }
 
 
@@ -505,6 +669,17 @@ void FMatHelperModule::RegisterButton()
 				));
 
 				Section.AddEntry(FToolMenuEntry::InitMenuEntry(
+					"TextureBrowser",
+					FText::FromString(L"\u8d34\u56fe\u6d4f\u89c8\u5668"),
+					FText::FromString(L"\u6253\u5f00\u6750\u8d28\u8d34\u56fe\u6d4f\u89c8\u5668\uff08\u53ef\u62d6\u62fd\u8d34\u56fe\u5230\u6750\u8d28\u56fe\uff09"),
+					FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.ContentBrowser"),
+					FUIAction(FExecuteAction::CreateLambda([]()
+					{
+						FGlobalTabmanager::Get()->TryInvokeTab(TextureBrowserTabName);
+					}))
+				));
+
+				Section.AddEntry(FToolMenuEntry::InitMenuEntry(
 					"Lock",
 					FText::FromString(L"\u9501\u5b9a"),
 					FText::FromString(L"\u9501\u5b9a\u9009\u4e2d\u8d44\u4ea7"),
@@ -549,7 +724,9 @@ void FMatHelperModule::RegisterButton()
 				FText::FromString(Name),
 				FText::FromString(L"\u521b\u5efa\u573a\u666f\u89c6\u56fe"),
 				FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Viewports"),
-				FUIAction(FExecuteAction::CreateLambda([&]()
+				// Capture ID by value: the menu entry outlives this function's stack frame,
+				// so a by-reference capture would read freed memory when the entry is clicked.
+				FUIAction(FExecuteAction::CreateLambda([ID]()
 				{
 					FGlobalTabmanager::Get()->TryInvokeTab(ID);
 				}))));

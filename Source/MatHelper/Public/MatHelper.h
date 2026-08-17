@@ -16,10 +16,6 @@ class UMatHelperMgn;
 class SMatHelperWidget;
 class IMaterialEditor;
 class FMaterialEditor;
-class FMatHelperPaletteInjector;
-
-// Factory defined in MatHelperWidget.cpp (needs full FMaterialEditor definition).
-TSharedPtr<FMatHelperPaletteInjector> MakeMatHelperPaletteInjector(const TWeakPtr<IMaterialEditor>& InMatEditor);
 
 
 class FMatHelperModule : public IModuleInterface
@@ -36,19 +32,23 @@ public:
 	TSharedRef<SDockTab> OnSpawnButtonInfoEditor(const FSpawnTabArgs& SpawnTabArgs);
 	TSharedRef<SDockTab> OnSpawnSceneEditorView(const FSpawnTabArgs& SpawnTabArgs);
 
+	// UE4.26 additions: extra content browser windows + a texture picker for materials.
+	TSharedRef<SDockTab> OnSpawnContentBrowser(const FSpawnTabArgs& SpawnTabArgs);
+	TSharedRef<SDockTab> OnSpawnTextureBrowser(const FSpawnTabArgs& SpawnTabArgs);
+
 	UMatHelperMgn* MatHelperMgn;
 
 	// UE4.26: no C++17 inline static; declare in header, define in cpp.
 	static const FName ButtonInfoEditorTabName;
 	static const FName SceneViewEditorTabName;
 	static const FName MaterialSceneViewEditorTabName;
+	static const FName TextureBrowserTabName;
 
 	static void PlayNiagaraOnEditorWorld();
 
 	// UE4.26: Palette is created after OnMaterialEditorOpened broadcasts, so injection is
-	// deferred through tickable injectors until the Palette widget exists.
+	// deferred via a core-ticker poll until the Palette widget exists.
 	void InjectPaletteWidget(FMaterialEditor* MatEditor);
-	void RemovePaletteInjector(FMatHelperPaletteInjector* Injector);
 
 private:
 	FString PluginPath;
@@ -64,6 +64,15 @@ private:
 	void InitNiagaraEditorHook();
 	void InitPluginInfo();
 
+	// UE4.26: persists the rebuilt config DataAsset once the asset registry scan
+	// is out of the way (deferred via a retrying core ticker; never during startup).
+	// Returns true to keep retrying on the next tick.
+	bool DeferredSaveConfigAsset();
+
+	// UE4.26: after a failed UE5-format load, force the class defaults back into
+	// the rebuilt object (NewObject can pick up half-initialized leftovers).
+	void RestoreConfigDefaults(UMatHelperMgn* Mgn);
+
 	// UE4.26: AddDefaultSystemTracks removed (no OnNewActorTrackAdded in ILevelSequenceModule).
 	FDelegateHandle MaterialOpenHandle;
 	FDelegateHandle MaterialInstanceOpenHandle;
@@ -72,8 +81,5 @@ private:
 	TSharedPtr<FCusAssetTypeActions_Material> MaterialAssetTypeActions;
 	TSharedPtr<FCusAssetTypeActions_MaterialInstanceConstant> MaterialInstanceAssetTypeActions;
 	TSharedPtr<FCusAssetTypeActions_MaterialInterface> MaterialInterfaceAssetTypeActions;
-
-	// UE4.26: pending palette injections waiting for Palette widget creation.
-	TArray<TSharedPtr<FMatHelperPaletteInjector>> PendingInjectors;
 };
 
